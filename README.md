@@ -12,6 +12,12 @@ Android Kotlin Examples for android-lecture
 * Copy repository files to the newly created project as appropriate.
 
 # Examples
+
 ## basicui
 * Button click handler
 * LinearLayout
+
+## activity-intent
+* Explicit intent
+* Implicit intent
+* Intent with extra data
