@@ -21,3 +21,11 @@ Android Kotlin Examples for android-lecture
 * Explicit intent
 * Implicit intent
 * Intent with extra data
+
+## adapter-view
+* ListView with ArrayAdapter, SimpleAdapter
+* ListView with Custome Adapter
+
+## custom-view
+* Custome MyView inherits View
+* override onTouchEvent
