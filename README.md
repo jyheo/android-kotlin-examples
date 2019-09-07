@@ -31,6 +31,10 @@ Android Kotlin Examples for android-lecture
 * override onTouchEvent
 
 ## fragment
+### fragment
 * Fragment Basic Examples
 * supportFragmentManager
 * OptionsMenu
+### fragment2
+* Two fragments in Activity
+* Message passing between two fragments via Activity
