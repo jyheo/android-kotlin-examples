@@ -9,19 +9,19 @@ class TestAppium():
         options.platform_name = 'Android'
         options.automation_name = 'UiAutomator2'
         options.app = appLocation   # path to the app package or use app_package and app_activity instead
-        options.allow_test_packages = True
+        #options.allow_test_packages = True
         options.enforce_app_install = True
         options.uiautomator2_server_install_timeout = 20000
         options.adb_exec_timeout = 20000
         options.language = 'en'
         options.locale = 'US'
-        options.auto_grant_permissions = True
+        #options.auto_grant_permissions = True
 
         self.driver = webdriver.Remote(appium_server_url, options=options)
         self.driver.implicitly_wait(10)
 
 
-    def test_myapp(self):
+    def test_myapp(self) -> None:
         try:
             txtview = self.driver.find_element(AppiumBy.XPATH, '//android.widget.TextView[@text="Hello World!"]')
             #txtview = self.driver.find_element(AppiumBy..ID, 'txtView')
