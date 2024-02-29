@@ -33,8 +33,8 @@ class TestAppium():
 
 if __name__ == '__main__':
     # 테스트할 APK 파일의 위치
-    DEF_APP_LOCATION = r'C:\Users\jyheo\AndroidStudioProjects\MyApplication2\app\build\outputs\apk\debug\app-debug.apk'
+    APP_LOCATION = r'C:\Users\jyheo\AndroidStudioProjects\MyApplication2\app\build\outputs\apk\debug\app-debug.apk'
 
-    testApp = TestAppium(DEF_APP_LOCATION)
+    testApp = TestAppium(APP_LOCATION)
     r = testApp.test_myapp()
     print(r)
