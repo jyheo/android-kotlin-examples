@@ -1,3 +1,3 @@
-make a new project with the package name, com.example.basic_ui
-copy these files (app) to the new project.
+make a new project in this folder.
+The package name must be "com.example.basic_ui"
 
