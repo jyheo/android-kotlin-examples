@@ -4,7 +4,7 @@ import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.EditText
-import androidx.activity.OnBackPressedCallback
+import androidx.activity.addCallback
 
 class ThirdActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -14,14 +14,12 @@ class ThirdActivity : AppCompatActivity() {
 
         findViewById<EditText>(R.id.editText)?.setText(msg)
 
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
+        onBackPressedDispatcher.addCallback(this, true) {
                 val et = findViewById<EditText>(R.id.editText)
                 val resultIntent = Intent()
                 resultIntent.putExtra("ResultString", et.text.toString())
                 setResult(RESULT_OK, resultIntent)
                 finish()
-            }
-        })
+        }
     }
 }
