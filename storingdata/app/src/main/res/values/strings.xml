@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Storing Data</string>
+
+    <string name="name">Name</string>
+    <string name="student_id">Student ID</string>
+    <string name="save">Save</string>
+
+    <string name="settings">Settings</string>
+    <string name="read_internal">Read Internal</string>
+    <string name="write_internal">Write Internal</string>
+    <string name="write_external">Write External</string>
+    <string name="read_external">Read External</string>
+    <string name="datastore_pref">Datastore Pref</string>
+    <string name="read_preference">Read Preference</string>
+</resources>
