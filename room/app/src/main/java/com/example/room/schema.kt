@@ -22,8 +22,7 @@ data class ClassInfo (
     foreignKeys = [
         ForeignKey(entity = Student::class, parentColumns = ["student_id"], childColumns = ["sid"]),
         ForeignKey(entity = ClassInfo::class, parentColumns = ["id"], childColumns = ["cid"])
-    ],
-    indices = [Index(value=["sid", "cid"])]
+    ]
 )
 data class Enrollment (
     val sid: Int,
