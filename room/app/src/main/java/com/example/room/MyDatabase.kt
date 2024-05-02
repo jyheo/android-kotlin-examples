@@ -14,15 +14,15 @@ abstract class MyDatabase : RoomDatabase() {
 
     companion object {
         private var INSTANCE: MyDatabase? = null
-        private val MIGRATION_1_2 = object : Migration(1, 2) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-
+        private val MIGRATION_1_2 = object : Migration(1, 2) {  // version 1 -> 2
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE student_table ADD COLUMN last_update INTEGER")
             }
         }
 
-        private val MIGRATION_2_3 = object : Migration(2, 3) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("ALTER TABLE student_table ADD COLUMN last_update INTEGER")
+        private val MIGRATION_2_3 = object : Migration(2, 3) {   // version 2 -> 3
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE student_table ADD COLUMN last_update INTEGER")
             }
         }
         fun getDatabase(context: Context) : MyDatabase {
