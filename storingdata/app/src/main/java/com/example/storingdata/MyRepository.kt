@@ -27,9 +27,6 @@ class MyRepository(private val context: Context) {
             fileInternal
 
     var valueInternal: String = readValue(fileInternal) // initialized by readValue
-        get() {
-            return field
-        }
         set(v) {
             field = v
             writeValue(fileInternal, v) // write value whenever update the value
