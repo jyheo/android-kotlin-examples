@@ -7,8 +7,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.asLiveData
+import kotlinx.coroutines.flow.Flow
 import java.io.File
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -28,6 +27,9 @@ class MyRepository(private val context: Context) {
             fileInternal
 
     var valueInternal: String = readValue(fileInternal) // initialized by readValue
+        get() {
+            return field
+        }
         set(v) {
             field = v
             writeValue(fileInternal, v) // write value whenever update the value
@@ -39,7 +41,7 @@ class MyRepository(private val context: Context) {
             writeValue(fileExternal, v)  // write value whenever update the value
         }
 
-    val myPref : LiveData<Preferences> = context.dataStore.data.asLiveData()
+    val myPref : Flow<Preferences> = context.dataStore.data
     suspend fun setPref(key: Preferences.Key<String>, value: String) {
         context.dataStore.edit {
             it[key] = value
