@@ -6,6 +6,9 @@ import android.widget.Button
 import android.widget.EditText
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.coroutineScope
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 class SettingsFragment : Fragment(R.layout.fragment_settings) {
     private val viewModel by activityViewModels<MyViewModel> { MyViewModelFactory(requireContext()) }
@@ -15,9 +18,12 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
         val name = view.findViewById<EditText>(R.id.editText)
         val student_id = view.findViewById<EditText>(R.id.editText2)
-        viewModel.myPref.observe(viewLifecycleOwner) {
-            name.setText(it[MyPrefKey.name_key] ?: "")
-            student_id.setText((it[MyPrefKey.student_id_key] ?: 0).toString())
+
+        lifecycleScope.launch {
+            viewModel.myPref.collect {
+                name.setText(it[MyPrefKey.name_key] ?: "")
+                student_id.setText((it[MyPrefKey.student_id_key] ?: 0).toString())
+            }
         }
 
         view.findViewById<Button>(R.id.button).setOnClickListener {

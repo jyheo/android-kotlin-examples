@@ -16,6 +16,8 @@ import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.commit
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 class ShowValueDialog(private val msg: String) : DialogFragment() {
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -63,9 +65,12 @@ class MainFragment : Fragment(R.layout.fragment_main) {
             }
         }
 
-        viewModel.myPref.observe(viewLifecycleOwner) {
-            val str = "name: ${it[MyPrefKey.name_key] ?: ""}   student id: ${it[MyPrefKey.student_id_key] ?: 0}"
-            textViewSettings.text = str
+        lifecycleScope.launch {
+            viewModel.myPref.collect {
+                val str =
+                    "name: ${it[MyPrefKey.name_key] ?: ""}   student id: ${it[MyPrefKey.student_id_key] ?: 0}"
+                textViewSettings.text = str
+            }
         }
     }
 }
