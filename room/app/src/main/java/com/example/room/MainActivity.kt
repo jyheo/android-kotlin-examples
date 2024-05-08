@@ -5,8 +5,9 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import kotlinx.coroutines.*
-
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     lateinit var myDao: MyDAO
@@ -17,7 +18,7 @@ class MainActivity : AppCompatActivity() {
 
         myDao = MyDatabase.getDatabase(this).getMyDao()
 
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch {
             with(myDao) {
                 insertStudent(Student(1, "james"))
                 insertStudent(Student(2, "john"))
@@ -47,7 +48,7 @@ class MainActivity : AppCompatActivity() {
         val textQueryStudent = findViewById<TextView>(R.id.text_query_student)
         queryStudent.setOnClickListener {
             val id = editStudentId.text.toString().toInt()
-            CoroutineScope(Dispatchers.IO).launch {
+            lifecycleScope.launch {
                 val results = myDao.getStudentsWithEnrollment(id)
                 if (results.isNotEmpty()) {
                     val str = StringBuilder().apply {
@@ -63,11 +64,11 @@ class MainActivity : AppCompatActivity() {
                             append(",")
                         }
                     }
-                    withContext(Dispatchers.Main) {
+                    MainScope().launch {
                         textQueryStudent.text = str
                     }
                 } else {
-                    withContext(Dispatchers.Main) {
+                    MainScope().launch {
                         textQueryStudent.text = ""
                     }
                 }
@@ -80,7 +81,7 @@ class MainActivity : AppCompatActivity() {
             val id = editStudentId.text.toString().toInt()
             val name = editStudentName.text.toString()
             if (id > 0 && name.isNotEmpty()) {
-                CoroutineScope(Dispatchers.IO).launch {
+                lifecycleScope.launch {
                     myDao.insertStudent(Student(id, name))
                 }
             }
