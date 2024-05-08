@@ -64,13 +64,9 @@ class MainActivity : AppCompatActivity() {
                             append(",")
                         }
                     }
-                    MainScope().launch {
-                        textQueryStudent.text = str
-                    }
+                    textQueryStudent.text = str
                 } else {
-                    MainScope().launch {
-                        textQueryStudent.text = ""
-                    }
+                    textQueryStudent.text = ""
                 }
             }
         }
