@@ -2,6 +2,7 @@ package com.example.room
 
 import androidx.lifecycle.LiveData
 import androidx.room.*
+import kotlinx.coroutines.flow.Flow
 
 data class StudentWithEnrollments(  // 1:N 관계
     @Embedded val student: Student,
@@ -25,6 +26,9 @@ interface MyDAO {
 
     @Query("SELECT * FROM student_table")
     fun getAllStudents(): LiveData<List<Student>>        // LiveData<> 사용
+
+    @Query("SELECT * FROM student_table")
+    fun getAllStudentsFlow(): Flow<List<Student>>
 
     @Query("SELECT * FROM student_table WHERE name = :sname")   // 메소드 인자를 SQL문에서 :을 붙여 사용
     suspend fun getStudentByName(sname: String): List<Student>
