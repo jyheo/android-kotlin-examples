@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Background Tasks</string>
+    <string name="no_permission">App has no permission %1$s. Some features would not work correctly.</string>
+    <string name="req_permission_reason">App requires %1$s permission. Could you allow the permission?</string>
+    <string name="noti_id">100</string>
+    <string name="noti_title">Playing Music</string>
+    <string name="noti_channel_id">worker</string>
+    <string name="cancel_task">Cancel Task</string>
+</resources>
