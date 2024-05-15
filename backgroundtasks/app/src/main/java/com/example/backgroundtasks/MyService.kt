@@ -40,14 +40,13 @@ class MyService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         println("MyService:onStartCommand $startId")
         startedCount++
-
         startForeground(notificationID, createNotification())
 
-        CoroutineScope(Dispatchers.IO + Job()).apply {
+        CoroutineScope(Dispatchers.IO).apply {
             launch {
                 for (i in 1..10) {
                     println("in service $startId#$i")
-                    updateNotification(notificationID, createNotification(i*10))
+                    showNotification(notificationID, createNotification(i*10))
                     delay(1000)
                 }
                 stopSelf(startId)
@@ -71,7 +70,7 @@ class MyService : Service() {
         NotificationManagerCompat.from(this).createNotificationChannel(channel)
     }
 
-    private fun updateNotification(id: Int, notification: Notification) {
+    private fun showNotification(id: Int, notification: Notification) {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
             == PackageManager.PERMISSION_GRANTED) {
             NotificationManagerCompat.from(this).notify(id, notification)

@@ -17,12 +17,15 @@ import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import kotlinx.coroutines.*
+import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
     private lateinit var scope: CoroutineScope
@@ -47,17 +50,6 @@ class MainActivity : AppCompatActivity() {
             requestSinglePermission(Manifest.permission.POST_NOTIFICATIONS)
         }
 
-
-
-        buttonStartCo.setOnClickListener {
-            startWorker()
-
-        }
-
-        buttonStopCo.setOnClickListener {
-            stopWorker()
-        }
-
         buttonStartService.setOnClickListener {
             Intent(this, MyService::class.java).also {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) { // Android 8.0
@@ -70,6 +62,13 @@ class MainActivity : AppCompatActivity() {
 
         buttonStartedCount.setOnClickListener {
             textViewCount.text = "${myService?.startedCount}"
+        }
+
+        buttonStartCo.setOnClickListener {
+            startWorker()
+        }
+        buttonStopCo.setOnClickListener {
+            stopWorker()
         }
 
         WorkManager.getInstance(this).getWorkInfosForUniqueWorkLiveData(MyWorker.name)
@@ -85,7 +84,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-        startWorker()
     }
 
     private fun startWorker() {
@@ -96,7 +94,6 @@ class MainActivity : AppCompatActivity() {
             // setRequiresDeviceIdle(true) // android 6.0(M) or higher
         }.build()
 
-        //val repeatingRequest = PeriodicWorkRequestBuilder<MyWorker>(1, TimeUnit.DAYS)
         /*val repeatingRequest = PeriodicWorkRequestBuilder<MyWorker>(15, TimeUnit.MINUTES)
             .setConstraints(constraints)
             .build()
