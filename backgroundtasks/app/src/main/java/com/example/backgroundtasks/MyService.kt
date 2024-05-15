@@ -42,12 +42,13 @@ class MyService : Service() {
         startedCount++
         startForeground(notificationID, createNotification())
 
-        CoroutineScope(Dispatchers.IO).apply {
+        CoroutineScope(Dispatchers.Default).apply {
             launch {
+                delay(5000)
                 for (i in 1..10) {
                     println("in service $startId#$i")
-                    showNotification(notificationID, createNotification(i*10))
-                    delay(1000)
+                    startForeground(notificationID, createNotification(i*10))
+                    delay(5000)
                 }
                 stopSelf(startId)
             }
@@ -64,9 +65,9 @@ class MyService : Service() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun createNotificationChannel() {
-        val channel = NotificationChannel(channelID, "default channel",
+        val channel = NotificationChannel(channelID, "service channel",
             NotificationManager.IMPORTANCE_DEFAULT)
-        channel.description = "description text of this channel."
+        channel.description = "notification channel for service."
         NotificationManagerCompat.from(this).createNotificationChannel(channel)
     }
 

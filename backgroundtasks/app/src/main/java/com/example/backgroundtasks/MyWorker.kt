@@ -24,11 +24,11 @@ class MyWorker(context: Context, parameters: WorkerParameters) : CoroutineWorker
         // foreground notification
         setForeground(createForegroundInfo("Starting Download"))
 
-        for (i in 0..100) {
+        for (i in 0..10) {
             withContext(Dispatchers.IO) {
-                Thread.sleep(1000)
+                Thread.sleep(5000)
             }
-            setForeground(createForegroundInfo("Downloading $i%"))
+            setForeground(createForegroundInfo("Downloading ${i*10}%"))
         }
         return Result.success()
     }
@@ -65,10 +65,10 @@ class MyWorker(context: Context, parameters: WorkerParameters) : CoroutineWorker
     @RequiresApi(Build.VERSION_CODES.O)
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
-            channelID, "default channel",
+            channelID, "worker channel",
             NotificationManager.IMPORTANCE_DEFAULT
         )
-        channel.description = "description text of this channel."
+        channel.description = "notification channel for worker."
         NotificationManagerCompat.from(applicationContext).createNotificationChannel(channel)
     }
 
