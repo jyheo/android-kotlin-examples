@@ -47,10 +47,10 @@ class MyWorker(context: Context, parameters: WorkerParameters) : CoroutineWorker
 
         val notification = NotificationCompat.Builder(applicationContext, channelID)
             .setContentTitle(title)
-            .setTicker(title)
             .setContentText(progress)
             .setSmallIcon(R.drawable.baseline_music_note_24)
             .setOngoing(true)
+            .setOnlyAlertOnce(true)
             // Add the cancel action to the notification which can
             // be used to cancel the worker
             .addAction(android.R.drawable.ic_delete, cancel, intent)
@@ -66,8 +66,7 @@ class MyWorker(context: Context, parameters: WorkerParameters) : CoroutineWorker
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
             channelID, "default channel",
-            //NotificationManager.IMPORTANCE_DEFAULT
-            NotificationManager.IMPORTANCE_LOW
+            NotificationManager.IMPORTANCE_DEFAULT
         )
         channel.description = "description text of this channel."
         NotificationManagerCompat.from(applicationContext).createNotificationChannel(channel)
