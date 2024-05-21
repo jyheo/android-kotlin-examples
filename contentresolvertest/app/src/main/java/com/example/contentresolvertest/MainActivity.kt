@@ -28,10 +28,14 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2)
-            requestMultiplePermission(arrayOf(Manifest.permission.READ_CALL_LOG, Manifest.permission.READ_EXTERNAL_STORAGE))
-        else
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+            requestMultiplePermission(arrayOf(Manifest.permission.READ_CALL_LOG, Manifest.permission.READ_MEDIA_IMAGES,
+                Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED))
+        else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
             requestMultiplePermission(arrayOf(Manifest.permission.READ_CALL_LOG, Manifest.permission.READ_MEDIA_IMAGES))
+        else
+            requestMultiplePermission(arrayOf(Manifest.permission.READ_CALL_LOG, Manifest.permission.READ_EXTERNAL_STORAGE))
+
 
         buttonCallLog.setOnClickListener {
             readCallLog()
@@ -63,11 +67,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun readMedia() {
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2) {
-            if (!hasPermission(Manifest.permission.READ_EXTERNAL_STORAGE))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            if (!hasPermission(Manifest.permission.READ_MEDIA_IMAGES) && !hasPermission(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED))
+                return
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (!hasPermission(Manifest.permission.READ_MEDIA_IMAGES))
                 return
         } else {
-            if (!hasPermission(Manifest.permission.READ_MEDIA_IMAGES))
+            if (!hasPermission(Manifest.permission.READ_EXTERNAL_STORAGE))
                 return
         }
 
@@ -108,7 +115,15 @@ class MainActivity : AppCompatActivity() {
             return
 
         val requestPermLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-            val noPerms = it.filter { item -> item.value == false }.keys
+            val noPerms = it.filter { item -> item.value == false }.keys.toMutableSet()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                if (it.contains(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED) || it.contains(Manifest.permission.READ_MEDIA_IMAGES)) {
+                    // READ_MEDIA_VISUAL_USER_SELECTED 와 READ_MEDIA_IMAGES 는 둘 중에 하나만 권한 부여받게 됨
+                    // 따라서 둘 중에 하나만 있다면 noPerms에 다른 권한은 제거
+                    noPerms.remove(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)
+                    noPerms.remove(Manifest.permission.READ_MEDIA_IMAGES)
+                }
+            }
             if (noPerms.isNotEmpty()) { // there is a permission which is not granted!
                 AlertDialog.Builder(this).apply {
                     setTitle("Warning")
