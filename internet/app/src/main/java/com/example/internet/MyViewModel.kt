@@ -72,7 +72,8 @@ class MyViewModel(private val context: Context) : ViewModel() {
     val responseBy = MutableLiveData<String>()
     val responseImg = MutableLiveData<Bitmap?>()
 
-    fun refreshRestrofit(userName: String) {
+    // Retrofit may be replaced by Ktor in the future.
+    fun refreshRetrofit(userName: String) {
         viewModelScope.launch {
             try {
                 //val c = api.contributors("square", "retrofit")

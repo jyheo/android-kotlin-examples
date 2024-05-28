@@ -53,7 +53,7 @@ class MainActivity : AppCompatActivity() {
             viewModel.refreshBitmapByVolley(downloadURL)
         }
         findViewById<Button>(R.id.retrofit).setOnClickListener {
-            viewModel.refreshRestrofit("jyheo")
+            viewModel.refreshRetrofit("jyheo")
         }
         findViewById<Button>(R.id.saveBitmap).setOnClickListener {
             viewModel.responseImg.value ?. let {
