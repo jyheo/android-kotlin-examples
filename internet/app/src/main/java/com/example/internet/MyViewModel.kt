@@ -11,6 +11,7 @@ import com.android.volley.toolbox.Volley
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import retrofit2.Call
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
@@ -52,6 +53,16 @@ interface RestApi {
         ... 생략 ...
     ]
     */
+    @GET("users/{user}/repos")
+    fun listReposCall(@Path("user") user: String): Call<List<Repo>>
+    /*  api.listReposCall("name").enqueue(object : retrofit2.Callback<List<Repo>> {
+            override fun onResponse(call: Call<List<Repo>>, response: retrofit2.Response<List<Repo>>) {
+                if (response.isSuccessful) {
+                }
+            }
+            override fun onFailure(p0: Call<List<Repo>>, p1: Throwable) {
+            }
+        }  */
 
     @GET("/repos/{owner}/{repo}/contributors")
     suspend fun contributors(
