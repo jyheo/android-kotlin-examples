@@ -7,12 +7,14 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.os.ParcelFileDescriptor
 import android.provider.MediaStore
 import android.widget.Button
 import android.widget.ImageView
@@ -114,18 +116,28 @@ class MainActivity : AppCompatActivity() {
         viewModel.refreshBitmapByVolley(downloadURL)
     }
 
+    private var downloadId = -1L
+    private val dwonloadFile = "testdownload.png"
+
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            val downloadId = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
-            when (intent?.action) {
+            val did = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
+            if (did != downloadId) return
+            when (intent.action) {
                 DownloadManager.ACTION_DOWNLOAD_COMPLETE -> {
-                    val filePath = File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "testdownload.png")
-                    println("Download Completed! $filePath ${filePath.length()}")
+                    val dManager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
+                    val pfd = dManager.openDownloadedFile(downloadId)
+                    ParcelFileDescriptor.AutoCloseInputStream(pfd).use {
+                        viewModel.responseBy.value = "Download Manager"
+                        viewModel.response.value = dManager.getUriForDownloadedFile(downloadId).path
+                        viewModel.responseImg.value = BitmapFactory.decodeStream(it)
+                    }
+                    println("Download Completed!")
                 }
                 else -> {
                     // DownloadManager.ACTION_NOTIFICATION_CLICKED
                     // DownloadManager.ACTION_VIEW_DOWNLOADS
-                    println(intent?.action)
+                    println(intent.action)
                 }
             }
         }
@@ -136,7 +148,7 @@ class MainActivity : AppCompatActivity() {
         val downloadURL = Uri.parse("https://www.hansung.ac.kr/sites/hansung/images/common/logo.png")
 
         val iFilter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
-        ContextCompat.registerReceiver(this, receiver, iFilter, ContextCompat.RECEIVER_NOT_EXPORTED)
+        ContextCompat.registerReceiver(this, receiver, iFilter, ContextCompat.RECEIVER_EXPORTED)
 
         val dManager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
         val request = DownloadManager.Request(downloadURL).apply {
@@ -144,15 +156,15 @@ class MainActivity : AppCompatActivity() {
             setDescription("Downloading a File")
             // setRequiresDeviceIdle(true)
             setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            setDestinationInExternalFilesDir(baseContext, Environment.DIRECTORY_DOWNLOADS, "testdownload.png")
+            setDestinationInExternalFilesDir(baseContext, Environment.DIRECTORY_DOWNLOADS, dwonloadFile)
             // setAllowedOverMetered(false)
         }
-        val dID = dManager.enqueue(request)
+        downloadId = dManager.enqueue(request)
         // you can use the dID for removing/deleting the download. dManager.remove(dID)
     }
 
     private fun openDownload() {
-        val filePath = File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "testdownload.png")
+        val filePath = File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), dwonloadFile)
         val contentUri: Uri =
             getUriForFile(this, "com.example.internet.file_provider", filePath)
         // we need <provider> in AndroidManifest.xml for the getUriForFile
