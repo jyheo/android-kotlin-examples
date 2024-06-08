@@ -115,13 +115,19 @@ class MainActivity : AppCompatActivity() {
             return
 
         val requestPermLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-            val noPerms = it.filter { item -> item.value == false }.keys.toMutableSet()
+            val noPerms = it.filter { item -> !item.value }.keys.toMutableSet()
+            val allowedPerms = it.filter { item -> item.value }.keys.toMutableSet()
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                if (it.contains(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED) || it.contains(Manifest.permission.READ_MEDIA_IMAGES)) {
-                    // READ_MEDIA_VISUAL_USER_SELECTED 와 READ_MEDIA_IMAGES 는 둘 중에 하나만 권한 부여받게 됨
-                    // 따라서 둘 중에 하나만 있다면 noPerms에 다른 권한은 제거
-                    noPerms.remove(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)
+                // READ_MEDIA_VISUAL_USER_SELECTED 와 READ_MEDIA_IMAGES 는 둘 중에 하나만 권한 부여받게 됨
+                // 따라서 둘 중에 하나만 있다면 noPerms에 다른 권한은 제거
+                if (allowedPerms.contains(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)) {
+                    // READ_MEDIA_VISUAL_USER_SELECTED 권한이 true라면 READ_MEDIA_IMAGES는 필요 없으므로 noPerms에서 제거
                     noPerms.remove(Manifest.permission.READ_MEDIA_IMAGES)
+                }
+                if (allowedPerms.contains(Manifest.permission.READ_MEDIA_IMAGES)) {
+                    // READ_MEDIA_IMAGES 권한이 true라면 READ_MEDIA_VISUAL_USER_SELECTED는 필요 없으므로 noPerms에서 제거
+                    noPerms.remove(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)
                 }
             }
             if (noPerms.isNotEmpty()) { // there is a permission which is not granted!
