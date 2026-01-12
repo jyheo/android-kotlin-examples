@@ -23,17 +23,17 @@ class TestAppium():
 
     def test_myapp(self) -> None:
         try:
-            txtview = self.driver.find_element(AppiumBy.XPATH, '//android.widget.TextView[@text="Hello World!"]')
+            txtview = self.driver.find_element(AppiumBy.XPATH, '//android.widget.TextView[@text="Hello Android!"]')
             #txtview = self.driver.find_element(AppiumBy..ID, 'txtView')
             print(txtview.text)
             return 'OK'            
         except:
-            return 'No TextView with "Hello World!" text found.'
+            return 'No TextView with "Hello Android!" text found.'
 
 
 if __name__ == '__main__':
     # 테스트할 APK 파일의 위치
-    APP_LOCATION = r'C:\Users\jyheo\AndroidStudioProjects\MyApplication2\app\build\outputs\apk\debug\app-debug.apk'
+    APP_LOCATION = r'C:\Users\jyheo\AndroidStudioProjects\MyApplication\app\build\outputs\apk\debug\app-debug.apk'
 
     testApp = TestAppium(APP_LOCATION)
     r = testApp.test_myapp()
