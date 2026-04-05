@@ -1,14 +1,30 @@
 package com.example.activity_intent
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import com.example.activity_intent.ui.theme.ActivityIntentTheme
 
-class SecondActivity : AppCompatActivity() {
+class SecondActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_second)
         Log.i(TAG, "$localClassName.onCreate")
+        setContent {
+            ActivityIntentTheme {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = "Second Activity")
+                }
+            }
+        }
     }
 
     override fun onStart() {

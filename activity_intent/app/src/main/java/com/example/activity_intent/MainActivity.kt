@@ -1,63 +1,48 @@
 package com.example.activity_intent
 
 import android.content.Intent
-import android.net.Uri
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
-import android.widget.Button
-import android.widget.TextView
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.lifecycle.ViewModelProvider
-import com.google.android.material.snackbar.Snackbar
-import org.w3c.dom.Text
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.activity_intent.ui.theme.ActivityIntentTheme
+import kotlinx.coroutines.launch
 
-class MainActivity : AppCompatActivity() {
-    private var count = 0
+class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-
         Log.i(TAG, "$localClassName.onCreate")
-
-        findViewById<Button>(R.id.buttonSecondActivity)?.setOnClickListener {
-            val intent = Intent(this, SecondActivity::class.java)
-            startActivity(intent)
-        }
-
-        findViewById<Button>(R.id.buttonDialActivity)?.setOnClickListener {
-            val implicitIntent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:114"))
-            startActivity(implicitIntent)
-        }
-
-        val activityResult = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            val msg = it.data?.getStringExtra("ResultString") ?: ""
-            Snackbar.make(findViewById(R.id.buttonThirdActivity), "ActivityResult:${it.resultCode} $msg", Snackbar.LENGTH_SHORT).show()
-            Log.i(TAG, "ActivityResult:${it.resultCode} $msg")
-        }
-
-        findViewById<Button>(R.id.buttonThirdActivity)?.setOnClickListener {
-            val intent = Intent(this, ThirdActivity::class.java)
-            intent.putExtra("UserDefinedExtra", "Hello")
-            activityResult.launch(intent)
-        }
-
-        // ViewModel
-        val viewModel = ViewModelProvider(this)[MyViewModel::class.java]
-        val viewModel2 = ViewModelProvider(this, MyViewModel2Factory(10))[MyViewModel2::class.java]
-
-        findViewById<TextView>(R.id.textView_count)?.text = getString(R.string.count_in_activity, count)
-        findViewById<TextView>(R.id.textView_count_viewmodel)?.text = getString(R.string.count_in_ViewModel, viewModel.count)
-        viewModel.countLivedata.observe(this) {
-            findViewById<TextView>(R.id.textView_livedata)?.text = getString(R.string.count_in_ViewModel_LiveData, it)
-        }
-
-        findViewById<Button>(R.id.button_incr)?.setOnClickListener {
-            count++
-            viewModel.increaseCount()
-            findViewById<TextView>(R.id.textView_count)?.text = getString(R.string.count_in_activity, count)
-            findViewById<TextView>(R.id.textView_count_viewmodel)?.text = getString(R.string.count_in_ViewModel, viewModel.count)
+        setContent {
+            ActivityIntentTheme {
+                MainScreen()
+            }
         }
     }
 
@@ -93,6 +78,85 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "ActivityLifeCycle"
-        private const val request_code = 0
+    }
+}
+
+@Composable
+fun MainScreen() {
+    val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    var count by remember { mutableIntStateOf(0) }
+    val myViewModel: MyViewModel = viewModel()
+    val myViewModel2: MyViewModel2 = viewModel(
+        factory = MyViewModel2Factory(10)
+    )
+
+    val countLiveData by myViewModel.countLivedata.observeAsState(0)
+
+    val activityResultLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val msg = result.data?.getStringExtra("ResultString") ?: ""
+        val snackbarText = "ActivityResult:${result.resultCode} $msg"
+        scope.launch {
+            snackbarHostState.showSnackbar(snackbarText)
+        }
+        Log.i("ActivityLifeCycle", snackbarText)
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(text = "Hello World!")
+
+            Button(onClick = {
+                val intent = Intent(context, SecondActivity::class.java)
+                context.startActivity(intent)
+            }) {
+                Text(text = stringResource(id = R.string.start_second_activity))
+            }
+
+            Button(onClick = {
+                val implicitIntent = Intent(Intent.ACTION_DIAL, "tel:114".toUri())
+                context.startActivity(implicitIntent)
+            }) {
+                Text(text = stringResource(id = R.string.start_dial_activity))
+            }
+
+            Button(onClick = {
+                val intent = Intent(context, ThirdActivity::class.java).apply {
+                    putExtra("UserDefinedExtra", "Hello")
+                }
+                activityResultLauncher.launch(intent)
+            }) {
+                Text(text = stringResource(id = R.string.start_third_activity_with_extra_data))
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(text = stringResource(id = R.string.count_in_activity, count))
+                Button(onClick = {
+                    count++
+                    myViewModel.increaseCount()
+                }) {
+                    Text(text = stringResource(id = R.string.Increase))
+                }
+            }
+
+            Text(text = stringResource(id = R.string.count_in_ViewModel, myViewModel.count))
+            Text(text = stringResource(id = R.string.count_in_ViewModel_LiveData, countLiveData))
+        }
     }
 }
