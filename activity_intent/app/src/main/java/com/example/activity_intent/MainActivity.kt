@@ -92,6 +92,8 @@ fun MainScreen(
 ) {
     val countState by myViewModel.countStateFlow.collectAsStateWithLifecycle()
 
+    // viewmodel이 MainScreenContent 내부에서 사용되면, preview가 제대로 안되서 위로 올림.
+
     MainScreenContent(
         countState = countState,
         onIncreaseCount = { myViewModel.increaseCount() }
