@@ -15,13 +15,17 @@ class SecondActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.i(TAG, "$localClassName.onCreate")
+
+        val action = intent.action ?: "No Action"
+        val data = intent.dataString ?: "No Data"
+
         setContent {
             ActivityIntentTheme {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = "Second Activity")
+                    Text(text = "Second Activity\nAction: $action\nData: $data")
                 }
             }
         }
