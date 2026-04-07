@@ -23,24 +23,15 @@ import com.example.activity_intent.ui.theme.ActivityIntentTheme
 class ThirdActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // MainActivity 에서 보낸 인텐트에 포함된 Extra 데이터 받기
         val initialMsg: String = intent?.getStringExtra("UserDefinedExtra") ?: ""
 
         setContent {
             ActivityIntentTheme {
                 var text by remember { mutableStateOf(initialMsg) }
 
-                BackHandler {
-                    val resultIntent = Intent().apply {
-                        putExtra("ResultString", text)
-                    }
-                    setResult(RESULT_OK, resultIntent)
-                    finish()
-                }
-
                 Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(10.dp)
+                    modifier = Modifier.fillMaxSize().padding(10.dp)
                 ) {
                     Text(text = stringResource(id = R.string.message_bundled_in_intent))
                     OutlinedTextField(
@@ -48,6 +39,15 @@ class ThirdActivity : ComponentActivity() {
                         onValueChange = { text = it },
                         modifier = Modifier.fillMaxWidth()
                     )
+                }
+
+                BackHandler {
+                    val resultIntent = Intent().apply {
+                        putExtra("ResultString", text)
+                    }
+                    // ThirdActivity에서 결과를 인텐트 Extra에 넣어서 리턴
+                    setResult(RESULT_OK, resultIntent)
+                    finish()
                 }
             }
         }

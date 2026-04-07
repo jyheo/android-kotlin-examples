@@ -1,6 +1,7 @@
 package com.example.activity_intent
 
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -14,25 +15,33 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.activity_intent.ui.theme.ActivityIntentTheme
-import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -76,16 +85,21 @@ class MainActivity : ComponentActivity() {
         Log.i(TAG, "$localClassName.onDestroy")
     }
 
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        Log.i(TAG, "$localClassName.onConfigurationChanged")
+    }
+
     companion object {
         private const val TAG = "ActivityLifeCycle"
     }
 }
 
+@Preview
 @Composable
 fun MainScreen() {
     val context = LocalContext.current
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
+    var resultText by remember { mutableStateOf("") }
 
     var count by remember { mutableIntStateOf(0) }
     val myViewModel: MyViewModel = viewModel()
@@ -93,31 +107,27 @@ fun MainScreen() {
         factory = MyViewModel2Factory(10)
     )
 
-    val countLiveData by myViewModel.countLivedata.observeAsState(0)
+    val countState by myViewModel.countStateFlow.collectAsStateWithLifecycle()
 
     val activityResultLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         val msg = result.data?.getStringExtra("ResultString") ?: ""
-        val snackbarText = "ActivityResult:${result.resultCode} $msg"
-        scope.launch {
-            snackbarHostState.showSnackbar(snackbarText)
-        }
-        Log.i("ActivityLifeCycle", snackbarText)
+        resultText = "ActivityResult:${result.resultCode} $msg"
+        Log.i("ActivityLifeCycle", resultText)
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { paddingValues ->
+
+
+    Scaffold { paddingValues ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(10.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxSize().padding(paddingValues).padding(10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = "Hello World!")
+            if (resultText.isNotEmpty()) {
+                Text(text = resultText)
+            }
 
             Button(onClick = {
                 val intent = Intent(context, SecondActivity::class.java)
@@ -146,7 +156,10 @@ fun MainScreen() {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(text = stringResource(id = R.string.count_in_activity, count))
+                Column {
+                    Text(text = stringResource(id = R.string.count_in_activity, count))
+                    Text(text = stringResource(id = R.string.count_in_ViewModel, countState))
+                }
                 Button(onClick = {
                     count++
                     myViewModel.increaseCount()
@@ -154,9 +167,7 @@ fun MainScreen() {
                     Text(text = stringResource(id = R.string.Increase))
                 }
             }
-
-            Text(text = stringResource(id = R.string.count_in_ViewModel, myViewModel.count))
-            Text(text = stringResource(id = R.string.count_in_ViewModel_LiveData, countLiveData))
         }
     }
+
 }
