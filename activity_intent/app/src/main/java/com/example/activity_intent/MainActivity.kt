@@ -85,19 +85,39 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Preview
 @Composable
-fun MainScreen() {
+fun MainScreen(
+    myViewModel: MyViewModel = viewModel(),
+    myViewModel2: MyViewModel2 = viewModel(factory = MyViewModel2Factory(10))
+) {
+    val countState by myViewModel.countStateFlow.collectAsStateWithLifecycle()
+
+    MainScreenContent(
+        countState = countState,
+        onIncreaseCount = { myViewModel.increaseCount() }
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun MainScreenPreview() {
+    ActivityIntentTheme {
+        MainScreenContent(
+            countState = 0,
+            onIncreaseCount = {}
+        )
+    }
+}
+
+@Composable
+fun MainScreenContent(
+    countState: Int,
+    onIncreaseCount: () -> Unit
+) {
     val context = LocalContext.current
     var resultText by remember { mutableStateOf("") }
 
     var count by remember { mutableIntStateOf(0) }
-    val myViewModel: MyViewModel = viewModel()
-    val myViewModel2: MyViewModel2 = viewModel(
-        factory = MyViewModel2Factory(10)
-    )
-
-    val countState by myViewModel.countStateFlow.collectAsStateWithLifecycle()
 
     val activityResultLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -106,8 +126,6 @@ fun MainScreen() {
         resultText = "ActivityResult:${result.resultCode} $msg"
         Log.i("ActivityLifeCycle", resultText)
     }
-
-
 
     Scaffold { paddingValues ->
         Column(
@@ -128,7 +146,8 @@ fun MainScreen() {
 
             Button(onClick = {
                 val implicitIntent = Intent(Intent.ACTION_DIAL, "tel:114".toUri())
-                context.startActivity(implicitIntent)
+                val chooser = Intent.createChooser(implicitIntent, "Title")
+                context.startActivity(chooser)
             }) {
                 Text(text = stringResource(id = R.string.start_dial_activity))
             }
@@ -152,12 +171,11 @@ fun MainScreen() {
                 }
                 Button(onClick = {
                     count++
-                    myViewModel.increaseCount()
+                    onIncreaseCount()
                 }) {
                     Text(text = stringResource(id = R.string.Increase))
                 }
             }
         }
     }
-
 }
