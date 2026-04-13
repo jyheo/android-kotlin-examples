@@ -75,11 +75,6 @@ class MainActivity : ComponentActivity() {
         Log.i(TAG, "$localClassName.onDestroy")
     }
 
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        super.onConfigurationChanged(newConfig)
-        Log.i(TAG, "$localClassName.onConfigurationChanged")
-    }
-
     companion object {
         private const val TAG = "ActivityLifeCycle"
     }
