@@ -148,7 +148,7 @@ fun SettingsScreen(viewModel: MyViewModel, onBack: () -> Unit) {
     var name by remember { mutableStateOf("") }
     var studentId by remember { mutableStateOf("") }
 
-    // Load initial values
+    // key1이 변경되거나 컴포저블이 처음 화면에 나타달 때 실행
     LaunchedEffect(myPref) {
         myPref?.let {
             name = it[MyPrefKey.name_key] ?: ""
@@ -157,11 +157,8 @@ fun SettingsScreen(viewModel: MyViewModel, onBack: () -> Unit) {
     }
 
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .padding(16.dp)
-                .fillMaxWidth(),
+        Column(modifier = Modifier.padding(innerPadding)
+                            .padding(16.dp).fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") }, modifier = Modifier.fillMaxWidth())
