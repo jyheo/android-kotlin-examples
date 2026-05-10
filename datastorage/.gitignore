@@ -1,0 +1,8 @@
+/*
+!.gitignore
+!app
+app/*
+!app/src
+app/src/androidTest
+app/src/test
+!readme.txt
