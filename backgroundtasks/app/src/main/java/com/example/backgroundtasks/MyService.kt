@@ -44,11 +44,11 @@ class MyService : Service() {
 
         CoroutineScope(Dispatchers.Default).apply {
             launch {
-                delay(5000)
+                delay(1000)
                 for (i in 1..10) {
                     println("in service $startId#$i")
                     startForeground(notificationID, createNotification(i*10))
-                    delay(5000)
+                    delay(1000)
                 }
                 stopSelf(startId)
             }

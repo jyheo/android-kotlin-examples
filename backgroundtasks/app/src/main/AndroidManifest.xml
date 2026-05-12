@@ -15,21 +15,24 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BackgroundTasks"
         tools:targetApi="31">
-        <service
-            android:name="androidx.work.impl.foreground.SystemForegroundService"
-            android:foregroundServiceType="shortService" />
-        <service
-            android:name=".MyService"
-            android:foregroundServiceType="shortService" />
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.BackgroundTasks">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="shortService" />
+        <service
+            android:name=".MyService"
+            android:foregroundServiceType="shortService" />
     </application>
 
 </manifest>

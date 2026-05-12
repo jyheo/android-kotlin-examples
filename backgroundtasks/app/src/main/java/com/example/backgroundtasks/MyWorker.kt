@@ -26,7 +26,7 @@ class MyWorker(context: Context, parameters: WorkerParameters) : CoroutineWorker
 
         for (i in 0..10) {
             withContext(Dispatchers.IO) {
-                Thread.sleep(5000)
+                Thread.sleep(1000)
             }
             setForeground(createForegroundInfo("Downloading ${i*10}%"))
         }

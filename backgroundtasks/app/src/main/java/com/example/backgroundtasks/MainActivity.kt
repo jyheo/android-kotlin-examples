@@ -1,10 +1,6 @@
 package com.example.backgroundtasks
 
 import android.os.Bundle
-import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import android.Manifest
 import android.content.ComponentName
 import android.content.Intent
@@ -12,78 +8,145 @@ import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.IBinder
-import android.widget.Button
-import android.widget.TextView
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.work.Constraints
-import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
-import kotlinx.coroutines.*
-import java.util.concurrent.TimeUnit
+import com.example.backgroundtasks.ui.theme.BackgroundTasksTheme
 
-class MainActivity : AppCompatActivity() {
-    private lateinit var scope: CoroutineScope
-
-    private val buttonStartCo: Button by lazy { findViewById(R.id.buttonStartWorker) }
-    private val buttonStopCo: Button by lazy { findViewById(R.id.buttonStopWorker) }
-    private val buttonStartService: Button by lazy { findViewById(R.id.buttonStartService) }
-    private val buttonStartedCount: Button by lazy { findViewById(R.id.buttonStartedCount) }
-    private val textViewCount: TextView by lazy { findViewById(R.id.textViewCount) }
-    private val textView: TextView by lazy { findViewById(R.id.textView) }
+class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContentView(R.layout.activity_main)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            requestSinglePermission(Manifest.permission.POST_NOTIFICATIONS)
-        }
 
-        buttonStartService.setOnClickListener {
-            Intent(this, MyService::class.java).also {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) { // Android 8.0
-                    startForegroundService(it) // must call startForground in a few seconds.
-                } else {
-                    startService(it)
+        setContent {
+            BackgroundTasksTheme {
+                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                    MainScreen()
                 }
             }
         }
+    }
 
-        buttonStartedCount.setOnClickListener {
-            textViewCount.text = "${myService?.startedCount}"
+    @Composable
+    fun MainScreen() {
+        // --- Permission Logic ---
+        val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            Manifest.permission.POST_NOTIFICATIONS
+        } else {
+            null
         }
 
-        buttonStartCo.setOnClickListener {
-            startWorker()
-        }
-        buttonStopCo.setOnClickListener {
-            stopWorker()
+        var showRationale by remember { mutableStateOf(false) }
+        var showWarning by remember { mutableStateOf(false) }
+
+        val requestPermLauncher = rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted ->
+            if (!isGranted) showWarning = true
         }
 
-        WorkManager.getInstance(this).getWorkInfosForUniqueWorkLiveData(MyWorker.name)
-            .observe(this) { workInfo ->
-                if (workInfo.isNotEmpty()) {
-                    when (workInfo[0].state) {
-                        WorkInfo.State.ENQUEUED -> println("Worker enqueued!")
-                        WorkInfo.State.RUNNING -> println("Worker running!")
-                        WorkInfo.State.SUCCEEDED -> println("Worker succeeded!")  // only for one time worker
-                        WorkInfo.State.CANCELLED -> println("Worker cancelled!")
-                        else -> println(workInfo[0].state)
+        LaunchedEffect(Unit) {
+            permission?.let {
+                if (checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED) {
+                    if (shouldShowRequestPermissionRationale(it)) {
+                        showRationale = true
+                    } else {
+                        requestPermLauncher.launch(it)
                     }
                 }
             }
+        }
 
+        if (showRationale && permission != null) {
+            AlertDialog(
+                onDismissRequest = { showRationale = false },
+                title = { Text("Reason") },
+                text = { Text(getString(R.string.req_permission_reason, permission)) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showRationale = false
+                        requestPermLauncher.launch(permission)
+                    }) { Text("Allow") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showRationale = false }) { Text("Deny") }
+                }
+            )
+        }
+
+        if (showWarning && permission != null) {
+            AlertDialog(
+                onDismissRequest = { showWarning = false },
+                title = { Text("Warning") },
+                text = { Text(getString(R.string.no_permission, permission)) },
+                confirmButton = {
+                    TextButton(onClick = { showWarning = false }) { Text("OK") }
+                }
+            )
+        }
+        // -------------------------
+
+        val workInfos by WorkManager.getInstance(applicationContext)
+            .getWorkInfosForUniqueWorkLiveData(MyWorker.name)
+            .observeAsState(initial = emptyList())
+
+        val workerStatus = remember(workInfos) {
+            workInfos.firstOrNull()?.state?.name ?: "UNKNOWN"
+        }
+
+        var serviceCount by remember { mutableStateOf(0) }
+
+        Column(
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(text = "Worker Status: $workerStatus", style = MaterialTheme.typography.headlineSmall)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(text = "Service Count: $serviceCount", style = MaterialTheme.typography.bodyLarge)
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(onClick = { startForegroundService() }) {
+                Text("Start Service")
+            }
+            Button(onClick = { serviceCount = myService?.startedCount ?: 0 }) {
+                Text("Get Started Count")
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = { startWorker() }) {
+                Text("Start Worker")
+            }
+            Button(onClick = { stopWorker() }) {
+                Text("Stop Worker")
+            }
+        }
+    }
+
+    private fun startForegroundService() {
+        Intent(this, MyService::class.java).also {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(it)
+            } else {
+                startService(it)
+            }
+        }
     }
 
     private fun startWorker() {
@@ -139,32 +202,5 @@ class MainActivity : AppCompatActivity() {
     override fun onStop() {
         super.onStop()
         unbindService(serviceConnection)
-    }
-
-    private fun requestSinglePermission(permission: String) {
-        if (checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED)
-            return
-
-        val requestPermLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
-            if (it == false) { // permission is not granted!
-                AlertDialog.Builder(this).apply {
-                    setTitle("Warning")
-                    setMessage(getString(R.string.no_permission, permission))
-                }.show()
-            }
-        }
-
-        if (shouldShowRequestPermissionRationale(permission)) {
-            // you should explain the reason why this app needs the permission.
-            AlertDialog.Builder(this).apply {
-                setTitle("Reason")
-                setMessage(getString(R.string.req_permission_reason, permission))
-                setPositiveButton("Allow") { _, _ -> requestPermLauncher.launch(permission) }
-                setNegativeButton("Deny") { _, _ -> }
-            }.show()
-        } else {
-            // should be called in onCreate()
-            requestPermLauncher.launch(permission)
-        }
     }
 }
