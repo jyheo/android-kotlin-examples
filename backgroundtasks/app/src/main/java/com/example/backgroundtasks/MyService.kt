@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.*
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
@@ -17,6 +18,9 @@ class MyService : Service() {
     private val binder = LocalBinder()
     private val notificationID = 10
     private val channelID = "service foreground channel"
+
+    private val serviceJob = Job()
+    private val serviceScope = CoroutineScope(Dispatchers.Default + serviceJob)
 
     inner class LocalBinder : Binder() {
         // Return this instance of LocalService so clients can call public methods
@@ -37,28 +41,40 @@ class MyService : Service() {
             createNotificationChannel()
         }
     }
+
+    private fun myStartForeground(id: Int, notification: Notification) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(
+                id,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE
+            )
+        } else {
+            startForeground(id, notification)
+        }
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         println("MyService:onStartCommand $startId")
         startedCount++
-        startForeground(notificationID, createNotification())
+        myStartForeground(notificationID, createNotification())
 
-        CoroutineScope(Dispatchers.Default).apply {
-            launch {
+        serviceScope.launch {
+            delay(1000)
+            for (i in 1..10) {
+                println("in service $startId#$i")
+                myStartForeground(notificationID, createNotification(i * 10))
                 delay(1000)
-                for (i in 1..10) {
-                    println("in service $startId#$i")
-                    startForeground(notificationID, createNotification(i*10))
-                    delay(1000)
-                }
-                stopSelf(startId)
             }
+            stopSelf(startId)
         }
 
-        return super.onStartCommand(intent, flags, startId) // START_STICKY, NOT_STICKY, REDELIVERY_INTENT
+        return START_NOT_STICKY
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        serviceJob.cancel()
         println("MyService:onDestroy")
     }
 

@@ -13,22 +13,36 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.example.backgroundtasks.ui.theme.BackgroundTasksTheme
 
 class MainActivity : ComponentActivity() {
+
+    private var myService: MyService? = null
+
+    private val serviceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            myService = (service as MyService.LocalBinder).getService()
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            myService = null
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,107 +50,33 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             BackgroundTasksTheme {
-                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    MainScreen()
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+                        RequestPermission()
+                    MainScreen(
+                        onStartService = { startForegroundService() },
+                        onGetServiceCount = { myService?.startedCount ?: 0 },
+                        onStartWorker = { startWorker() },
+                        onStopWorker = { stopWorker() }
+                    )
                 }
             }
         }
     }
 
-    @Composable
-    fun MainScreen() {
-        // --- Permission Logic ---
-        val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            Manifest.permission.POST_NOTIFICATIONS
-        } else {
-            null
+    override fun onStart() {
+        super.onStart()
+        Intent(this, MyService::class.java).also {
+            bindService(it, serviceConnection, BIND_AUTO_CREATE)
         }
+    }
 
-        var showRationale by remember { mutableStateOf(false) }
-        var showWarning by remember { mutableStateOf(false) }
-
-        val requestPermLauncher = rememberLauncherForActivityResult(
-            ActivityResultContracts.RequestPermission()
-        ) { isGranted ->
-            if (!isGranted) showWarning = true
-        }
-
-        LaunchedEffect(Unit) {
-            permission?.let {
-                if (checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED) {
-                    if (shouldShowRequestPermissionRationale(it)) {
-                        showRationale = true
-                    } else {
-                        requestPermLauncher.launch(it)
-                    }
-                }
-            }
-        }
-
-        if (showRationale && permission != null) {
-            AlertDialog(
-                onDismissRequest = { showRationale = false },
-                title = { Text("Reason") },
-                text = { Text(getString(R.string.req_permission_reason, permission)) },
-                confirmButton = {
-                    TextButton(onClick = {
-                        showRationale = false
-                        requestPermLauncher.launch(permission)
-                    }) { Text("Allow") }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showRationale = false }) { Text("Deny") }
-                }
-            )
-        }
-
-        if (showWarning && permission != null) {
-            AlertDialog(
-                onDismissRequest = { showWarning = false },
-                title = { Text("Warning") },
-                text = { Text(getString(R.string.no_permission, permission)) },
-                confirmButton = {
-                    TextButton(onClick = { showWarning = false }) { Text("OK") }
-                }
-            )
-        }
-        // -------------------------
-
-        val workInfos by WorkManager.getInstance(applicationContext)
-            .getWorkInfosForUniqueWorkLiveData(MyWorker.name)
-            .observeAsState(initial = emptyList())
-
-        val workerStatus = remember(workInfos) {
-            workInfos.firstOrNull()?.state?.name ?: "UNKNOWN"
-        }
-
-        var serviceCount by remember { mutableStateOf(0) }
-
-        Column(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(text = "Worker Status: $workerStatus", style = MaterialTheme.typography.headlineSmall)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = "Service Count: $serviceCount", style = MaterialTheme.typography.bodyLarge)
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Button(onClick = { startForegroundService() }) {
-                Text("Start Service")
-            }
-            Button(onClick = { serviceCount = myService?.startedCount ?: 0 }) {
-                Text("Get Started Count")
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = { startWorker() }) {
-                Text("Start Worker")
-            }
-            Button(onClick = { stopWorker() }) {
-                Text("Stop Worker")
-            }
-        }
+    override fun onStop() {
+        super.onStop()
+        unbindService(serviceConnection)
     }
 
     private fun startForegroundService() {
@@ -151,56 +91,135 @@ class MainActivity : ComponentActivity() {
 
     private fun startWorker() {
         val constraints = Constraints.Builder().apply {
-            setRequiredNetworkType(NetworkType.UNMETERED) // un-metered network such as WiFi
+            setRequiredNetworkType(NetworkType.UNMETERED)
             setRequiresBatteryNotLow(true)
-            //setRequiresCharging(true)
-            // setRequiresDeviceIdle(true) // android 6.0(M) or higher
         }.build()
-
-        /*val repeatingRequest = PeriodicWorkRequestBuilder<MyWorker>(15, TimeUnit.MINUTES)
-            .setConstraints(constraints)
-            .build()
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            MyWorker.name,
-            ExistingPeriodicWorkPolicy.KEEP,
-            repeatingRequest)*/
 
         val oneTimeRequest = OneTimeWorkRequestBuilder<MyWorker>()
             .setConstraints(constraints)
             .build()
         WorkManager.getInstance(this).enqueueUniqueWork(
             MyWorker.name, ExistingWorkPolicy.KEEP, oneTimeRequest)
-
     }
 
     private fun stopWorker() {
-        // to stop the MyWorker
         WorkManager.getInstance(this).cancelUniqueWork(MyWorker.name)
     }
+}
 
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
+@Composable
+fun RequestPermission() {
+    val context = LocalContext.current
+    val permission = Manifest.permission.POST_NOTIFICATIONS
 
+    var showRationale by remember { mutableStateOf(false) }
+    var showWarning by remember { mutableStateOf(false) }
 
-    private var myService: MyService? = null
+    val requestPermLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (!isGranted) showWarning = true
+    }
 
-    private val serviceConnection = object : ServiceConnection {
-        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            myService = (service as MyService.LocalBinder).getService()
-        }
-
-        override fun onServiceDisconnected(name: ComponentName?) {
-            myService = null
+    LaunchedEffect(Unit) {
+        permission.let {
+            if (context.checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED) {
+                if ((context as? ComponentActivity)?.shouldShowRequestPermissionRationale(it) == true) {
+                    showRationale = true
+                } else {
+                    requestPermLauncher.launch(it)
+                }
+            }
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-        Intent(this, MyService::class.java).also {
-            bindService(it, serviceConnection, BIND_AUTO_CREATE)
-        }
+    if (showRationale) {
+        AlertDialog(
+            onDismissRequest = { showRationale = false },
+            title = { Text("Notification Permission") },
+            text = { Text(stringResource(R.string.req_permission_reason, "Notifications")) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showRationale = false
+                    requestPermLauncher.launch(permission)
+                }) { Text("Allow") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRationale = false }) { Text("Deny") }
+            }
+        )
     }
 
-    override fun onStop() {
-        super.onStop()
-        unbindService(serviceConnection)
+    if (showWarning) {
+        AlertDialog(
+            onDismissRequest = { showWarning = false },
+            title = { Text("Permission Denied") },
+            text = { Text(stringResource(R.string.no_permission, "Notifications")) },
+            confirmButton = {
+                TextButton(onClick = { showWarning = false }) { Text("OK") }
+            }
+        )
+    }
+}
+
+@Composable
+fun MainScreen(
+    onStartService: () -> Unit,
+    onGetServiceCount: () -> Int,
+    onStartWorker: () -> Unit,
+    onStopWorker: () -> Unit
+) {
+    val context = LocalContext.current
+
+    val workInfos by WorkManager.getInstance(context.applicationContext)
+        .getWorkInfosForUniqueWorkLiveData(MyWorker.name)
+        .observeAsState(initial = emptyList())
+
+    val workerStatus = remember(workInfos) {
+        workInfos.firstOrNull()?.state?.name ?: "UNKNOWN"
+    }
+
+    var serviceCount by remember { mutableIntStateOf(0) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .systemBarsPadding()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(text = "Worker Status: $workerStatus", style = MaterialTheme.typography.headlineSmall)
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(text = "Service Count: $serviceCount", style = MaterialTheme.typography.bodyLarge)
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Button(
+            onClick = onStartService,
+            modifier = Modifier.fillMaxWidth(0.8f)
+        ) {
+            Text("Start Service")
+        }
+        Button(
+            onClick = { serviceCount = onGetServiceCount() },
+            modifier = Modifier.fillMaxWidth(0.8f)
+        ) {
+            Text("Refresh Service Count")
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(
+            onClick = onStartWorker,
+            modifier = Modifier.fillMaxWidth(0.8f)
+        ) {
+            Text("Start Worker")
+        }
+        Button(
+            onClick = onStopWorker,
+            modifier = Modifier.fillMaxWidth(0.8f)
+        ) {
+            Text("Stop Worker")
+        }
     }
 }

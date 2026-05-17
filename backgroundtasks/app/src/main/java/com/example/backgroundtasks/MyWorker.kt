@@ -3,7 +3,7 @@ package com.example.backgroundtasks
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
-import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE
+import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
@@ -12,8 +12,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.delay
 
 
 class MyWorker(context: Context, parameters: WorkerParameters) : CoroutineWorker(context, parameters) {
@@ -25,10 +24,8 @@ class MyWorker(context: Context, parameters: WorkerParameters) : CoroutineWorker
         setForeground(createForegroundInfo("Starting Download"))
 
         for (i in 0..10) {
-            withContext(Dispatchers.IO) {
-                Thread.sleep(1000)
-            }
-            setForeground(createForegroundInfo("Downloading ${i*10}%"))
+            delay(1000)
+            setForeground(createForegroundInfo("Downloading ${i * 10}%"))
         }
         return Result.success()
     }
@@ -57,7 +54,7 @@ class MyWorker(context: Context, parameters: WorkerParameters) : CoroutineWorker
             .build()
 
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-            ForegroundInfo(notificationID, notification, FOREGROUND_SERVICE_TYPE_SHORT_SERVICE)
+            ForegroundInfo(notificationID, notification, FOREGROUND_SERVICE_TYPE_DATA_SYNC)
         else
             ForegroundInfo(notificationID, notification)
     }
