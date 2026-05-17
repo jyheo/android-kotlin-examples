@@ -172,13 +172,9 @@ fun MainScreen(
 ) {
     val context = LocalContext.current
 
-    val workInfos by WorkManager.getInstance(context.applicationContext)
+    val workInfos by WorkManager.getInstance(context)
         .getWorkInfosForUniqueWorkLiveData(MyWorker.name)
         .observeAsState(initial = emptyList())
-
-    val workerStatus = remember(workInfos) {
-        workInfos.firstOrNull()?.state?.name ?: "UNKNOWN"
-    }
 
     var serviceCount by remember { mutableIntStateOf(0) }
 
@@ -190,7 +186,7 @@ fun MainScreen(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = "Worker Status: $workerStatus", style = MaterialTheme.typography.headlineSmall)
+        Text(text = "worker Status: ${workInfos.firstOrNull()?.state?.name ?: "UNKNOWN"}")
         Spacer(modifier = Modifier.height(8.dp))
         Text(text = "Service Count: $serviceCount", style = MaterialTheme.typography.bodyLarge)
 
